@@ -18,7 +18,10 @@ This also includes a virtual token implementation for integration testing, see [
 
 [![Build Status](https://travis-ci.org/ryankurte/go-u2f.svg?branch=master)](https://travis-ci.org/ryankurte/go-u2f)
 
-Components working, API subject to change as better interfaces are realised. Suggest installation with `gopkg.in/ryankurte/go-u2f.v1`.
+Components working, API subject to change as better interfaces are realised. If you want to use master, make sure you have solid tests that will catch any changes / failures prior to deployment. 
+
+More sensibly, install with gopkg and an explicit version ie. `gopkg.in/ryankurte/go-u2f.v1.1`.
+
 
 ## Usage
 
