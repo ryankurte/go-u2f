@@ -11,7 +11,6 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/asn1"
-	"errors"
 	"time"
 )
 
@@ -99,7 +98,7 @@ func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) 
 	}
 
 	if time.Now().Sub(c.Timestamp) > timeout {
-		return nil, errors.New("u2f: challenge has expired")
+		return nil, ErrChallengeExpired
 	}
 
 	regData, err := decodeBase64(resp.RegistrationData)
@@ -134,20 +133,20 @@ func (c *Challenge) Register(resp RegisterResponse, config *RegistrationConfig) 
 
 func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	if len(buf) < 1+65+1+1+1 {
-		return nil, nil, errors.New("u2f: data is too short")
+		return nil, nil, ErrDataShort
 	}
 
 	var r Registration
 	r.raw = buf
 
 	if buf[0] != 0x05 {
-		return nil, nil, errors.New("u2f: invalid reserved byte")
+		return nil, nil, ErrInvalidReservedByte
 	}
 	buf = buf[1:]
 
 	x, y := elliptic.Unmarshal(elliptic.P256(), buf[:65])
 	if x == nil {
-		return nil, nil, errors.New("u2f: invalid public key")
+		return nil, nil, ErrInvalidPublicKey
 	}
 	r.PubKey.Curve = elliptic.P256()
 	r.PubKey.X = x
@@ -157,7 +156,7 @@ func parseRegistration(buf []byte) (*Registration, []byte, error) {
 	khLen := int(buf[0])
 	buf = buf[1:]
 	if len(buf) < khLen {
-		return nil, nil, errors.New("u2f: invalid key handle")
+		return nil, nil, ErrInvalidKeyHandle
 	}
 	r.KeyHandle = buf[:khLen]
 	buf = buf[khLen:]

@@ -94,6 +94,27 @@ import (
 const u2fVersion = "U2F_V2"
 const timeout = 5 * time.Minute
 
+var (
+    // Authentication errors
+    ErrCounterLow = errors.New("u2f: counter not increasing")
+    ErrRandomGen = errors.New("u2f: unable to generate random bytes")
+    ErrUntrustedFacet = errors.New("u2f: untrusted facet id")
+    ErrWrongKeyHandle = errors.New("u2f: wrong key handle")
+    ErrChallengeExpired = errors.New("u2f: challenge has expired")
+    ErrChallengeMismatch = errors.New("u2f: challenge does not match")
+    ErrUserNotPresent = errors.New("u2f: user was not present")
+
+    // Parser errors
+    ErrDataShort = errors.New("u2f: data is too short")
+    ErrTrailingData = errors.New("u2f: trailing data")
+
+    ErrInvalidPresense = errors.New("u2f: invalid user presence byte")
+    ErrInvalidSig = errors.New("u2f: invalid signature")
+    ErrInvalidReservedByte = errors.New("u2f: invalid reserved byte")
+    ErrInvalidPublicKey = errors.New("u2f: invalid public key")
+    ErrInvalidKeyHandle = errors.New("u2f: invalid key handle")
+)
+
 func decodeBase64(s string) ([]byte, error) {
 	for i := 0; i < len(s)%4; i++ {
 		s += "="
@@ -125,7 +146,7 @@ func NewChallenge(appID string, trustedFacets []string, registeredKeys []Registr
 		return nil, err
 	}
 	if n != 32 {
-		return nil, errors.New("u2f: unable to generate random bytes")
+		return nil, ErrRandomGen
 	}
 
 	var c Challenge
@@ -152,13 +173,13 @@ func verifyClientData(clientData []byte, challenge Challenge) error {
 		}
 	}
 	if !foundFacetID {
-		return errors.New("u2f: untrusted facet id")
+		return ErrUntrustedFacet
 	}
 
 	c := encodeBase64(challenge.Challenge)
 	if len(c) != len(cd.Challenge) ||
 		subtle.ConstantTimeCompare([]byte(c), []byte(cd.Challenge)) != 1 {
-		return errors.New("u2f: challenge does not match")
+		return ErrChallengeMismatch
 	}
 
 	return nil

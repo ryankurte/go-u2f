@@ -9,7 +9,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/sha256"
 	"encoding/asn1"
-	"errors"
 	"math/big"
 	"time"
 )
@@ -46,7 +45,7 @@ func (c *Challenge) SignRequest() *SignRequestMessage {
 // The latest counter value is returned, which the caller should store.
 func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	if time.Now().Sub(c.Timestamp) > timeout {
-		return nil, errors.New("u2f: challenge has expired")
+		return nil, ErrChallengeExpired
 	}
 
 	// Find appropriate registration
@@ -57,7 +56,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		}
 	}
 	if reg == nil {
-		return nil, errors.New("u2f: wrong key handle")
+		return nil, ErrWrongKeyHandle
 	}
 
 	sigData, err := decodeBase64(resp.SignatureData)
@@ -76,7 +75,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	}
 
 	if ar.Counter < reg.Counter {
-		return nil, errors.New("u2f: counter not increasing")
+		return nil, ErrCounterLow
 	}
 	reg.Counter = ar.Counter
 
@@ -89,7 +88,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 	}
 
 	if !ar.UserPresenceVerified {
-		return nil, errors.New("u2f: user was not present")
+		return nil, ErrUserNotPresent
 	}
 
 	return reg, nil
@@ -108,14 +107,14 @@ type authResp struct {
 
 func parseSignResponse(sd []byte) (*authResp, error) {
 	if len(sd) < 5 {
-		return nil, errors.New("u2f: data is too short")
+		return nil, ErrDataShort
 	}
 
 	var ar authResp
 
 	userPresence := sd[0]
 	if userPresence|1 != 1 {
-		return nil, errors.New("u2f: invalid user presence byte")
+		return nil, ErrInvalidPresense
 	}
 	ar.UserPresenceVerified = userPresence == 1
 
@@ -128,7 +127,7 @@ func parseSignResponse(sd []byte) (*authResp, error) {
 		return nil, err
 	}
 	if len(rest) != 0 {
-		return nil, errors.New("u2f: trailing data")
+		return nil, ErrTrailingData
 	}
 
 	return &ar, nil
@@ -145,7 +144,7 @@ func verifyAuthSignature(ar authResp, pubKey *ecdsa.PublicKey, appID string, cli
 	hash := sha256.Sum256(buf)
 
 	if !ecdsa.Verify(pubKey, hash[:], ar.sig.R, ar.sig.S) {
-		return errors.New("u2f: invalid signature")
+		return ErrInvalidSig
 	}
 
 	return nil
