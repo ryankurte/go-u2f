@@ -16,12 +16,11 @@ This also includes a virtual token implementation for integration testing, see [
 
 [![Build Status](https://travis-ci.org/ryankurte/go-u2f.svg?branch=master)](https://travis-ci.org/ryankurte/go-u2f)
 
-Components working, API subject to change as better interfaces are realised. Suggest installation with `gopkg.in/ryankurte/go-u2f.v1`.
+Components working, API subject to change as better interfaces are realised. Suggest installation with `gopkg.in/ryankurte/go-u2f.v0` and/or making sure you have reasonable tests.
 
 ## Usage
 
-Please visit http://godoc.org/github.com/ryankurte/go-u2f for the full
-documentation.
+Please visit http://godoc.org/github.com/ryankurte/go-u2f for the full documentation.
 
 ### Request Enrolment
 
@@ -136,3 +135,7 @@ You can then test registering and authenticating using your token.
 ## License
 
 The Go FIDO U2F Library is licensed under the MIT License.
+
+------
+
+If you have any questions, comments, or suggestions, feel free to open an issue or a pull request.
