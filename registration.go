@@ -19,7 +19,7 @@ type Registration struct {
 	// Base64 encoded ASN1 public key
 	PublicKey string
 	// Usage counter
-	Counter uint
+	Counter uint32
 	// Base64 encoded PEM certificate
 	Certificate string
 }
@@ -66,7 +66,7 @@ func (reg *registrationRaw) ToRegistration() *Registration {
 		KeyHandle:   keyHandleString,
 		PublicKey:   publicKeyString,
 		Certificate: certString,
-		Counter:     uint(reg.Counter),
+		Counter:     reg.Counter,
 	}
 
 	return &cleanReg
@@ -96,7 +96,7 @@ func (reg *registrationRaw) FromRegistration(r Registration) error {
 	reg.AttestationCert = cert
 
 	// Counter
-	reg.Counter = uint32(r.Counter)
+	reg.Counter = r.Counter
 
 	return nil
 }
