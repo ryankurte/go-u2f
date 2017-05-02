@@ -7,6 +7,7 @@ package u2f
 
 import (
 	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/sha256"
 	"encoding/asn1"
 	"math/big"
@@ -40,21 +41,16 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, ErrChallengeExpired
 	}
 
-	// Convert registrations to raw equivalents
-	rawKeys := []registrationRaw{}
-	for _, v := range c.RegisteredKeys {
-		rawKey := registrationRaw{}
-		rawKey.FromRegistration(v)
-		rawKeys = append(rawKeys, rawKey)
-	}
-
 	// Find appropriate registration
-	var reg *registrationRaw = nil
-	for _, r := range rawKeys {
-		if resp.KeyHandle == encodeBase64(r.KeyHandle) {
-			reg = &r
+	var reg *Registration = nil
+	for i := range c.RegisteredKeys {
+		var tmp = &c.RegisteredKeys[i]
+		if resp.KeyHandle == tmp.KeyHandle {
+			reg = tmp
+			break
 		}
 	}
+
 	if reg == nil {
 		return nil, ErrWrongKeyHandle
 	}
@@ -83,7 +79,13 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, err
 	}
 
-	if err := verifyAuthSignature(*ar, &reg.PublicKey, c.AppID, clientData); err != nil {
+	// Unmarshal registration public key
+	publicKeyDecoded, err := decodeBase64(reg.PublicKey)
+	var PublicKey ecdsa.PublicKey
+	PublicKey.X, PublicKey.Y = elliptic.Unmarshal(elliptic.P256(), publicKeyDecoded)
+	PublicKey.Curve = elliptic.P256()
+
+	if err := verifyAuthSignature(*ar, &PublicKey, c.AppID, clientData); err != nil {
 		return nil, err
 	}
 
@@ -91,9 +93,7 @@ func (c *Challenge) Authenticate(resp SignResponse) (*Registration, error) {
 		return nil, ErrUserNotPresent
 	}
 
-	cleanReg := reg.ToRegistration()
-
-	return cleanReg, nil
+	return reg, nil
 }
 
 type ecdsaSig struct {

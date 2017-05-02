@@ -23,7 +23,6 @@ var trustedFacets = []string{appID}
 var challenge *u2f.Challenge
 
 var registrations []u2f.Registration
-var counter uint32
 
 func registerRequest(w http.ResponseWriter, r *http.Request) {
 	c, err := u2f.NewChallenge(appID, trustedFacets, registrations)
@@ -59,7 +58,6 @@ func registerResponse(w http.ResponseWriter, r *http.Request) {
 	}
 
 	registrations = append(registrations, *reg)
-	counter = 0
 
 	log.Printf("Registration success: %+v", reg)
 	w.Write([]byte("success"))
@@ -103,9 +101,9 @@ func signResponse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newCounter, err := challenge.Authenticate(signResp)
+	reg, err := challenge.Authenticate(signResp)
 	if err == nil {
-		log.Printf("newCounter: %d", newCounter)
+		log.Printf("newCounter: %d", reg.Counter)
 		w.Write([]byte("success"))
 		return
 	}
@@ -119,6 +117,9 @@ const indexHTML = `
 <html>
   <head>
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+
+    <!-- The original u2f-api.js code can be found here:
+    https://github.com/google/u2f-ref-code/blob/master/u2f-gae-demo/war/js/u2f-api.js -->
     <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
 
   </head>
